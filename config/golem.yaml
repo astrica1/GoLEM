@@ -1,0 +1,336 @@
+# GoLEM Configuration File
+# This is a comprehensive configuration file for the GoLEM (Go Language Execution Model) library
+
+# General Application Settings
+version: "1.0.0"
+environment: "development"  # development, staging, production
+debug: false
+log_level: "info"           # debug, info, warn, error
+
+# Engine Configuration
+engine:
+  worker_count: 4           # Number of worker goroutines
+  queue_size: 100           # Task queue size
+  enable_metrics: true      # Enable Prometheus metrics
+  task_timeout: 300         # Task execution timeout in seconds
+  retry_attempts: 3         # Number of retry attempts for failed tasks
+  retry_delay: 5            # Delay between retries in seconds
+
+# REST API Configuration
+rest:
+  port: 8080
+  host: "0.0.0.0"
+  enable_cors: true
+  cors_origins:
+    - "*"
+  enable_swagger: true
+  enable_tls: false
+  tls_cert_file: ""
+  tls_key_file: ""
+  
+  # Rate Limiting
+  rate_limit:
+    enabled: true
+    requests_per_minute: 100
+    burst_size: 10
+    store: "memory"         # memory, redis
+  
+  # Middleware Configuration
+  middleware:
+    enable_logging: true
+    enable_recovery: true
+    enable_compression: true
+    enable_timeout: true
+    timeout_duration: 30    # seconds
+  
+  # Authentication Configuration
+  auth:
+    provider: "jwt"         # jwt, oauth2, basic, none
+    require_auth: false
+    public_paths:
+      - "/health"
+      - "/metrics"
+      - "/swagger/*"
+    admin_paths:
+      - "/admin/*"
+    basic_auth_users: {}    # username: password
+
+# gRPC Configuration
+grpc:
+  port: 9090
+  host: "0.0.0.0"
+  enable_tls: false
+  tls_cert_file: ""
+  tls_key_file: ""
+  max_recv_msg_size: 4194304  # 4MB in bytes
+  max_send_msg_size: 4194304  # 4MB in bytes
+  enable_auth: false
+
+# LLM Provider Configuration
+llm:
+  default_provider: "openai"
+  providers:
+    openai:
+      enabled: false        # Set to true and add API key to use
+      api_key: ""          # Set your OpenAI API key here or use GOLEM_LLM_PROVIDERS_OPENAI_API_KEY env var
+      base_url: "https://api.openai.com/v1"
+      default_model: "gpt-3.5-turbo"
+      max_tokens: 4096
+      temperature: 0.7
+      top_p: 1.0
+      frequency_penalty: 0.0
+      presence_penalty: 0.0
+      request_timeout: 30   # seconds
+      max_retries: 3
+      custom_headers: {}
+    
+    anthropic:
+      enabled: false        # Set to true and add API key to use
+      api_key: ""          # Set your Anthropic API key here or use GOLEM_LLM_PROVIDERS_ANTHROPIC_API_KEY env var
+      base_url: "https://api.anthropic.com"
+      default_model: "claude-3-haiku-20240307"
+      max_tokens: 100000
+      temperature: 0.7
+      request_timeout: 30   # seconds
+      max_retries: 3
+      custom_headers: {}
+    
+    ollama:
+      enabled: false        # Set to true and ensure Ollama is running
+      api_key: ""          # Not required for Ollama
+      base_url: "http://localhost:11434"
+      default_model: "llama2"
+      max_tokens: 2048
+      temperature: 0.7
+      request_timeout: 60   # seconds (longer for local models)
+      max_retries: 3
+      custom_headers: {}
+
+# Memory Backend Configuration
+memory:
+  default_backend: "inmemory"
+  backends:
+    inmemory:
+      type: "inmemory"
+      enabled: true
+      config: {}
+    
+    redis:
+      type: "redis"
+      enabled: false        # Set to true and configure to use Redis
+      config:
+        host: "localhost"
+        port: 6379
+        password: ""        # Set Redis password if required
+        database: 0
+        pool_size: 10
+        max_retries: 3
+        dial_timeout: 5     # seconds
+        read_timeout: 3     # seconds
+        write_timeout: 3    # seconds
+    
+    postgresql:
+      type: "postgresql"
+      enabled: false        # Set to true and configure to use PostgreSQL
+      config:
+        host: "localhost"
+        port: 5432
+        user: "postgres"
+        password: ""        # Set PostgreSQL password
+        database: "golem"
+        ssl_mode: "disable"  # disable, require, verify-ca, verify-full
+        max_open_conns: 25
+        max_idle_conns: 25
+        conn_lifetime: 300  # seconds
+    
+    sqlite:
+      type: "sqlite"
+      enabled: false        # Set to true and configure to use SQLite
+      config:
+        path: "./data/golem.db"
+        mode: "rwc"         # ro, rw, rwc, memory
+        cache_mode: "shared"
+        journal_mode: "WAL"
+        synchronous: "NORMAL"
+        foreign_keys: true
+        busy_timeout: 5000  # milliseconds
+
+# Tools Configuration
+tools:
+  enabled_tools:
+    - "calculator"
+    - "search"
+    - "wikipedia"
+    - "filesystem"
+    - "http"
+    - "datetime"
+    - "text"
+    - "system"
+  disabled_tools: []
+  
+  # Individual tool configurations
+  tool_configs:
+    calculator:
+      enabled: true
+      timeout: 10         # seconds
+      max_retries: 2
+    
+    search:
+      enabled: true
+      timeout: 30         # seconds
+      max_retries: 3
+      config:
+        search_engine: "duckduckgo"  # For web search
+        max_results: 10
+    
+    wikipedia:
+      enabled: true
+      timeout: 15         # seconds
+      max_retries: 3
+      config:
+        language: "en"
+        max_extract_length: 1000
+    
+    filesystem:
+      enabled: true
+      timeout: 10         # seconds
+      max_retries: 2
+      config:
+        allowed_paths:    # Restrict file access to these paths
+          - "./data"
+          - "./temp"
+        blocked_paths:    # Block access to these paths
+          - "/etc"
+          - "/sys"
+          - "/proc"
+        max_file_size: 1048576  # 1MB in bytes
+    
+    http:
+      enabled: true
+      timeout: 30         # seconds
+      max_retries: 3
+      config:
+        allowed_domains: []  # Empty means all domains allowed
+        blocked_domains:     # Block requests to these domains
+          - "localhost"
+          - "127.0.0.1"
+          - "0.0.0.0"
+        max_response_size: 1048576  # 1MB in bytes
+        user_agent: "GoLEM/1.0.0"
+    
+    datetime:
+      enabled: true
+      timeout: 5          # seconds
+      max_retries: 1
+      config:
+        timezone: "UTC"
+        format: "2006-01-02 15:04:05"
+    
+    text:
+      enabled: true
+      timeout: 10         # seconds
+      max_retries: 2
+      config:
+        max_text_length: 10000  # characters
+    
+    system:
+      enabled: true
+      timeout: 5          # seconds
+      max_retries: 1
+      config:
+        allow_system_info: true
+        allow_process_info: false
+
+  # Safety Configuration
+  safety:
+    enable_sandbox: true
+    allowed_paths:
+      - "./data"
+      - "./temp"
+      - "./uploads"
+    blocked_paths:
+      - "/etc"
+      - "/sys"
+      - "/proc"
+      - "/bin"
+      - "/usr/bin"
+    allow_network_access: true
+    allowed_domains: []
+    blocked_domains:
+      - "localhost"
+      - "127.0.0.1"
+      - "0.0.0.0"
+    max_file_size: 1048576      # 1MB in bytes
+    max_execution_time: 30      # seconds
+
+  # Execution Configuration
+  execution:
+    enable_parallel: true
+    max_concurrent_tools: 5
+    global_timeout: 60          # seconds
+    enable_result_caching: true
+    cache_ttl: 300              # seconds
+
+# Security Configuration
+security:
+  enable_auth: false
+  jwt_secret: ""              # Set a strong JWT secret for production
+  jwt_expiration: 24          # hours
+  api_keys: []                # List of API keys for authentication
+  enable_https: false
+  trusted_proxies: []
+  enable_csrf: false
+  csrf_secret: ""
+  
+  session:
+    store: "memory"           # memory, redis, cookie
+    secret: ""                # Set a strong session secret
+    max_age: 3600            # seconds
+    http_only: true
+    secure: false            # Set to true in production with HTTPS
+    same_site: "Lax"
+    domain: ""
+    path: "/"
+
+# Monitoring and Observability Configuration
+monitoring:
+  enable_metrics: true
+  enable_tracing: false
+  enable_profiling: false     # Enable Go pprof profiling
+  metrics_port: 9091
+  
+  prometheus:
+    enabled: true
+    path: "/metrics"
+    namespace: "golem"
+    subsystem: ""
+  
+  jaeger:
+    enabled: false
+    service_name: "golem"
+    agent_endpoint: "localhost:6831"
+    sampler_type: "const"
+    sampler_param: 1.0
+  
+  health_check:
+    enabled: true
+    path: "/health"
+    interval: 30              # seconds
+    timeout: 5                # seconds
+    start_delay: 5            # seconds
+
+# Example Usage:
+# 1. Copy this file to 'config/golem.yaml'
+# 2. Set your LLM provider API keys (either in config or environment variables)
+# 3. Configure your preferred memory backend (Redis/PostgreSQL if needed)
+# 4. Adjust tool configurations based on your security requirements
+# 5. Run GoLEM with: ./golem --config config/golem.yaml
+
+# Environment Variable Overrides:
+# You can override any configuration value using environment variables.
+# Use the prefix GOLEM_ and replace dots with underscores.
+# Examples:
+#   GOLEM_DEBUG=true
+#   GOLEM_REST_PORT=8081
+#   GOLEM_LLM_PROVIDERS_OPENAI_API_KEY=your-api-key
+#   GOLEM_MEMORY_DEFAULT_BACKEND=redis
