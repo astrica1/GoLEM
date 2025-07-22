@@ -197,7 +197,6 @@ func validateParameterType(name string, value interface{}, schema golem.ToolSche
 	return nil
 }
 
-// ToolManager manages tools for agents
 type ToolManager struct {
 	tools map[string]golem.Tool
 	mu    sync.RWMutex
@@ -290,7 +289,6 @@ func (tm *ToolManager) Clear() {
 
 // LoadBuiltinTools loads all built-in tools into the manager
 func (tm *ToolManager) LoadBuiltinTools() {
-	// Load all built-in tools
 	tm.AddTool(NewCalculatorTool())
 	tm.AddTool(NewSearchTool())
 	tm.AddTool(NewWikipediaTool())
@@ -301,7 +299,6 @@ func (tm *ToolManager) LoadBuiltinTools() {
 	tm.AddTool(NewSystemInfoTool())
 }
 
-// ToolExecutionResult represents the result of tool execution
 type ToolExecutionResult struct {
 	ToolName string        `json:"tool_name"`
 	Success  bool          `json:"success"`
@@ -320,7 +317,6 @@ func ExecuteToolSafely(ctx context.Context, tool golem.Tool, params map[string]i
 		Success:  false,
 	}
 
-	// Recover from panics
 	defer func() {
 		result.Duration = time.Since(start)
 		if r := recover(); r != nil {
@@ -329,13 +325,11 @@ func ExecuteToolSafely(ctx context.Context, tool golem.Tool, params map[string]i
 		}
 	}()
 
-	// Validate parameters
 	if err := tool.ValidateParams(params); err != nil {
 		result.Error = fmt.Sprintf("parameter validation failed: %v", err)
 		return result
 	}
 
-	// Execute tool
 	output, err := tool.Execute(ctx, params)
 	if err != nil {
 		result.Error = err.Error()
@@ -347,19 +341,16 @@ func ExecuteToolSafely(ctx context.Context, tool golem.Tool, params map[string]i
 	return result
 }
 
-// Custom tool interface for tools that need initialization
 type InitializableTool interface {
 	golem.Tool
 	Initialize(config map[string]interface{}) error
 }
 
-// Custom tool interface for tools that need cleanup
 type CleanupTool interface {
 	golem.Tool
 	Cleanup() error
 }
 
-// AdvancedToolManager provides additional functionality for managing tools
 type AdvancedToolManager struct {
 	*ToolManager
 	initConfigs map[string]map[string]interface{}
@@ -377,7 +368,6 @@ func NewAdvancedToolManager() *AdvancedToolManager {
 
 // AddToolWithConfig adds a tool with initialization configuration
 func (atm *AdvancedToolManager) AddToolWithConfig(tool golem.Tool, config map[string]interface{}) error {
-	// Initialize tool if it supports initialization
 	if initTool, ok := tool.(InitializableTool); ok {
 		if err := initTool.Initialize(config); err != nil {
 			return fmt.Errorf("failed to initialize tool %s: %w", tool.Name(), err)
@@ -397,7 +387,6 @@ func (atm *AdvancedToolManager) RemoveToolWithCleanup(name string) error {
 		return err
 	}
 
-	// Cleanup tool if it supports cleanup
 	if cleanupTool, ok := tool.(CleanupTool); ok {
 		if err := cleanupTool.Cleanup(); err != nil {
 			atm.logger.WithError(err).WithField("tool", name).Warn("Tool cleanup failed")
